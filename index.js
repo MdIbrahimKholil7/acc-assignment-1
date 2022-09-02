@@ -1,5 +1,10 @@
 const http = require('http');
 const url = require('url')
+const express = require('express');
+const app = express()
+const getRandomUser = require('./api/getRandomUser.js')
+app.use(express.json())
+
 
 const fs = require('fs');
 const user = {
@@ -16,10 +21,11 @@ const listener = http.createServer((req, res) => {
         res.write('<p>This is home page</p>')
     }
 
+    // create user 
     if (req.url === '/createUser') {
+
         const randomUserName = Math.floor(Math.random() * userName.length) + 1
         const userDetails = {
-            id: user?.userTable?.length + 1,
             name: userName[randomUserName],
             gender: 'Male',
             contact: '01741313873',
@@ -29,6 +35,7 @@ const listener = http.createServer((req, res) => {
         fs.readFile('./user.json', (err, data) => {
             // console.log(data)
             const json = JSON.parse(data)
+            userDetails.id = json.length + 1
             json.push(userDetails)
             fs.writeFile('./user.json', JSON.stringify(json), err => {
                 if (err) {
@@ -38,8 +45,51 @@ const listener = http.createServer((req, res) => {
         }
         )
     }
+    // random user 
+    else if (req.url === '/user/random') {
+        fs.readFile('./user.json', (err, data) => {
+            const user = JSON.parse(data)
+            const randomUser = Math.floor(Math.random() * user.length)
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(user[randomUser]));
+
+        })
+    }
+    //  all user 
+    else if ((req.url === '/user/all') || req.url.includes('/user/all?limit')) {
+        // const limit  = req.query.limit 
+
+        const limit = url.parse(req.url, true).query.limit
+        console.log(limit)
+        fs.readFile('./user.json', (err, data) => {
+            const user = JSON.parse(data)
+            res.setHeader('Content-Type', 'application/json');
+            if (limit < user.length && limit >= 0) {
+                res.end(JSON.stringify(user[+limit]));
+            } else {
+                res.end(JSON.stringify(user));
+            }
+
+        })
+    }
 
 })
 const port = 5000
 listener.listen(port)
 console.log('server is running on ', port)
+
+
+// app.use('/user',getRandomUser)
+
+
+
+
+
+
+
+
+
+
+
+
+
